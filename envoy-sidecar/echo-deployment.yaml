@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: echo-deployment
+  namespace: envoy-sidecar
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: echo-app
+  template:
+    metadata:
+      labels:
+        app: echo-app
+    spec:
+      containers:
+      - name: http-echo
+        image: hashicorp/http-echo:0.2.3
+        args:
+        - "-text=Hello from the echo service!"
+        - "-listen=:8080"
+        ports:
+        - containerPort: 8080
+      - name: envoy
+        image: envoyproxy/envoy:v1.26.0
+        ports:
+        - containerPort: 10000 # Envoy listener port
+        - containerPort: 15000 # Envoy admin port
+        volumeMounts:
+        - name: envoy-config
+          mountPath: /etc/envoy/envoy.yaml
+          subPath: envoy.yaml
+      volumes:
+      - name: envoy-config
+        configMap:
+          name: envoy-configmap
+
